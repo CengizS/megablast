@@ -1,3 +1,12 @@
+import GameAudio from "./audio/GameAudio.js";
+import Asteroid from "./entities/Asteroid.js";
+import Galaxy from "./entities/Galaxy.js";
+import Particle from "./entities/Particle.js";
+import Rock from "./entities/Rock.js";
+import RadialProjectile from "./entities/RadialProjectile.js";
+import { CONFIG } from "./config.js";
+import { fastCos, fastSin } from "./utils/math.js";
+
 var animationInstance;
 let lastTimestamp;
 const TWO_PI = Math.PI * 2;
@@ -9,15 +18,15 @@ canvas.height = window.innerHeight * dpr;
 canvas.style.width = `${window.innerWidth}px`;
 canvas.style.height = `${window.innerHeight}px`;
 */
-canvas.width = 1080;
-canvas.height = 576;
+canvas.width = CONFIG.canvas.width;
+canvas.height = CONFIG.canvas.height;
 let ctx = canvas.getContext("2d");
 let showHelp = false;
 let score = 0;
 let shipLives = 3;
 let currentLife = 0;
 let shipHitCount = 0;
-let SHOOTING_CHANCE = 0.0075;
+let SHOOTING_CHANCE = CONFIG.shootingChance;
 
 let liveEl = document.querySelector("#liveEl");
 let scoreEl = document.querySelector("#scoreEl");
@@ -52,13 +61,13 @@ let audio = new GameAudio({
 let help = document.getElementById("help");
 
 // Fruchtkategorien, Farben repräsentieren unterschiedliche Früchte
-let fruitCategories = ["red", "green", "cyan", "orange", "purple"];
+let fruitCategories = CONFIG.fruit.categories;
 
 // Fruchtvariablen
 let fruitCreationTimer = Date.now();
-let fruitWidth = 30;
-let fruitHeight = 30;
-let fruitSpeed = 3;
+let fruitWidth = CONFIG.fruit.width;
+let fruitHeight = CONFIG.fruit.height;
+let fruitSpeed = CONFIG.fruit.speed;
 let fruits = [];
 let fruitProjectiles = [];
 let fruitSideways = false;
@@ -66,46 +75,48 @@ let fruitSideways = false;
 // Player sprite
 const playerSprite = document.getElementById("playerSprite");
 
-var rightPressed = false;
-var leftPressed = false;
-var upPressed = false;
-var downPressed = false;
-var spacePressed = false;
-var cPressed = false;
-var tPressed = false;
-var dPressed = false;
-var mPressed = false;
-var hPressed = false;
+const input = {
+  rightPressed: false,
+  leftPressed: false,
+  upPressed: false,
+  downPressed: false,
+  spacePressed: false,
+  cPressed: false,
+  tPressed: false,
+  dPressed: false,
+  mPressed: false,
+  hPressed: false,
+};
 
 // Spielvariablen
-let playerWidth = 64;
-let playerHeight = 64;
+let playerWidth = CONFIG.player.width;
+let playerHeight = CONFIG.player.height;
 let playerX = canvas.width * 0.5;
 let playerY = (canvas.height / 8) * 7;
-let playerSpeed = 8;
+let playerSpeed = CONFIG.player.speed;
 
 // Projektilvariablen
 let particles = [];
 let projectileWidth = 10;
 let projectileHeight = 10;
-let projectileSpeed = 10;
+let projectileSpeed = CONFIG.projectile.speed;
 let projectiles = [];
 
-let starCount = 250; // Anzahl der Sterne, die zufällig platziert werden
+let starCount = CONFIG.stars.count; // Anzahl der Sterne, die zufällig platziert werden
 let stars = [];
 
 // Galaxiendefinitionen
-const galaxyColors = ["white", "yellow", "orange", "lightblue"];
-let galaxySizes = [2, 3, 5, 7];
-let galaxySpeedBase = 0.05;
-let galaxyCount = 5;
+const galaxyColors = CONFIG.galaxy.colors;
+let galaxySizes = CONFIG.galaxy.sizes;
+let galaxySpeedBase = CONFIG.galaxy.speedBase;
+let galaxyCount = CONFIG.galaxy.count;
 let galaxies = [];
 
 // Asteroidenvariablen
-let asteroidSize = 20;
+let asteroidSize = CONFIG.asteroid.size;
 let asteroids = [];
 let asteroidSpawnTimer = Date.now();
-let asteroidSpeed = 7;
+let asteroidSpeed = CONFIG.asteroid.speed;
 let asteroidSprite = new Image();
 asteroidSprite.src = "asteroid.png";
 
@@ -116,30 +127,38 @@ let rightRocks = [];
 // Funktion zum Erzeugen von Asteroiden
 function createAsteroid() {
   const currentTime = Date.now();
-  if (currentTime - asteroidSpawnTimer < 500) return;
+  if (currentTime - asteroidSpawnTimer < CONFIG.asteroid.spawnIntervalMs) {
+    return;
+  }
 
   const positionX = Math.random() * (canvas.width - asteroidSize);
   asteroids.push(
-    new Asteroid(
-      positionX,
-      -asteroidSize,
-      Math.random() * asteroidSize,
-      Math.random() * asteroidSpeed + 3,
-      Math.random() * TWO_PI,
-      asteroidSprite
-    )
+    new Asteroid({
+      x: positionX,
+      y: -asteroidSize,
+      radius: Math.random() * asteroidSize,
+      speed: Math.random() * asteroidSpeed + 3,
+      rotation: Math.random() * TWO_PI,
+      sprite: asteroidSprite,
+      ctx,
+      canvas,
+      twoPi: TWO_PI,
+    })
   );
 
   asteroidSpawnTimer = currentTime;
 }
 
-function updateAndDrawAsteroids() {
+function updateAsteroids(dtScale) {
   createAsteroid();
   asteroids = asteroids.filter((asteroid) => {
-    asteroid.update();
-
+    asteroid.update(dtScale);
     return asteroid.y < canvas.height;
   });
+}
+
+function renderAsteroids() {
+  asteroids.forEach((asteroid) => asteroid.draw());
 }
 
 var drawFunctions = [
@@ -212,13 +231,13 @@ var drawFunctions = [
     ctx.moveTo(x, y - outerRadius);
 
     for (let i = 0; i < spikes; i++) {
-      xValue = x + Math.cos(rotation) * outerRadius;
-      yValue = y + Math.sin(rotation) * outerRadius;
+      let xValue = x + fastCos(rotation) * outerRadius;
+      let yValue = y + fastSin(rotation) * outerRadius;
       ctx.lineTo(xValue, yValue);
       rotation += step;
 
-      xValue = x + Math.cos(rotation) * innerRadius;
-      yValue = y + Math.sin(rotation) * innerRadius;
+      xValue = x + fastCos(rotation) * innerRadius;
+      yValue = y + fastSin(rotation) * innerRadius;
       ctx.lineTo(xValue, yValue);
       rotation += step;
     }
@@ -235,9 +254,9 @@ var drawFunctions = [
 ];
 
 // Felsenformation rechts und links des Spielfelds definieren
-let rockHeight = 100;
-let variance = 50;
-let maxOffset = 0;
+let rockHeight = CONFIG.rocks.height;
+let variance = CONFIG.rocks.variance;
+let maxOffset = CONFIG.rocks.maxOffset;
 function populateRocks() {
   let offset = 0; // aktuelle Höhenänderung für die Felsen
 
@@ -246,48 +265,91 @@ function populateRocks() {
     let randRight = Math.random() * variance + 10;
     offset = Math.random() * maxOffset; // aktualisiere die Höhenänderung für die nächsten Felsen
 
-    leftRocks.push(new Rock(0, i, rockHeight, randLeft, 5));
+    leftRocks.push(
+      new Rock({
+        x: 0,
+        y: i,
+        height: rockHeight,
+        width: randLeft,
+        miniRockSize: CONFIG.rocks.miniSize,
+        ctx,
+        canvas,
+      })
+    );
     rightRocks.push(
-      new Rock(canvas.width - randRight, i, rockHeight, randRight, 5)
+      new Rock({
+        x: canvas.width - randRight,
+        y: i,
+        height: rockHeight,
+        width: randRight,
+        miniRockSize: CONFIG.rocks.miniSize,
+        ctx,
+        canvas,
+      })
     );
   }
 }
 
-function updateRocks() {
+function updateRocks(dtScale) {
   leftRocks.forEach((rock) => {
-    rock.update();
+    rock.update(dtScale);
+  });
+  rightRocks.forEach((rock) => {
+    rock.update(dtScale);
+  });
+}
+
+function renderRocks() {
+  leftRocks.forEach((rock) => {
     rock.draw();
   });
   rightRocks.forEach((rock) => {
-    rock.update();
     rock.draw();
   });
 }
 
 // Radiales Projektil abfeuern
 function fireRadialProjectile() {
-  const numberOfProjectiles = 36; // Anzahl der radialen Projektile
-  const speed = 7; // Geschwindigkeit der radialen Projektile
+  const numberOfProjectiles = CONFIG.radialProjectile.count; // Anzahl der radialen Projektile
+  const speed = CONFIG.radialProjectile.speed; // Geschwindigkeit der radialen Projektile
   const posX = playerX + playerWidth * 0.5;
   const posY = playerY + playerHeight * 0.5;
   const angleIncrement = TWO_PI / numberOfProjectiles;
 
   for (let i = 0; i < numberOfProjectiles; i++) {
     let angle = angleIncrement * i;
-    let speedX = Math.cos(angle) * speed;
-    let speedY = Math.sin(angle) * speed;
+    let speedX = fastCos(angle) * speed;
+    let speedY = fastSin(angle) * speed;
 
     // Projektile in Liste aufnehmen und sie von der Position des Spielers aus abfeuern
-    radialProjectiles.push(new RadialProjectile(posX, posY, speedX, speedY, 4));
+    radialProjectiles.push(
+      new RadialProjectile({
+        x: posX,
+        y: posY,
+        speedX,
+        speedY,
+        dimension: CONFIG.radialProjectile.size,
+        ctx,
+      })
+    );
   }
 }
 
 function createParticles(x, y, color) {
-  const numberOfParticles = 50;
+  const numberOfParticles = CONFIG.particles.count;
   particles.push(
     ...new Array(numberOfParticles)
       .fill()
-      .map((_, i) => new Particle(x, y, colorFromRatio(i / numberOfParticles)))
+      .map(
+        (_, i) =>
+          new Particle({
+            x,
+            y,
+            color: colorFromRatio(i / numberOfParticles),
+            ctx,
+            twoPi: TWO_PI,
+          })
+      )
   );
 }
 
@@ -299,7 +361,9 @@ function colorFromRatio(ratio) {
 function createFruit() {
   const currentTime = Date.now();
 
-  if (currentTime - fruitCreationTimer < 500) return;
+  if (currentTime - fruitCreationTimer < CONFIG.fruit.spawnIntervalMs) {
+    return;
+  }
 
   const xDirection = Math.random() > 0.5;
   const position =
@@ -323,36 +387,16 @@ function createFruit() {
     sideWays: fruitSideways,
   });
 
-  fruitSideways = Math.random() < 0.2;
+  fruitSideways = Math.random() < CONFIG.fruit.sidewaysChance;
   fruitCreationTimer = currentTime;
 }
 
-// Früchte zeichnen
-function drawFruits() {
+function updateFruits(dtScale) {
   const halfPlayerWidth = playerWidth * 0.5;
   const halfPlayerHeight = playerHeight * 0.5;
   fruits = fruits.filter((fruit) => {
-    const drawFunction = drawFunctions[fruit.shape];
-    ctx.fillStyle = fruit.category;
-    drawFunction(fruit);
-
-    if (debug) {
-      ctx.fillStyle = "rgba(255, 0, 0, 0.4)";
-      ctx.fillRect(fruit.x, fruit.y, fruit.width, fruit.height);
-
-      if (fruit.sideWays) {
-        ctx.fillStyle = "white";
-        ctx.font = "bold 14px Arial";
-        const measure = ctx.measureText("S");
-        const tw = measure.width * 0.5;
-        const tx = fruit.x + fruit.width * 0.5 - tw;
-        const ty = fruit.y + fruit.height * 0.5;
-        ctx.fillText("S", tx, ty);
-      }
-    }
-
-    fruit.x += fruit.speedX;
-    fruit.y += fruit.speedY;
+    fruit.x += fruit.speedX * dtScale;
+    fruit.y += fruit.speedY * dtScale;
 
     if (
       Math.random() < SHOOTING_CHANCE &&
@@ -388,8 +432,31 @@ function drawFruits() {
         fruit.x > 0 &&
         fruit.x < canvas.width
       );
-    } else {
-      return fruit.y < canvas.height;
+    }
+    return fruit.y < canvas.height;
+  });
+}
+
+// Früchte zeichnen
+function renderFruits() {
+  fruits.forEach((fruit) => {
+    const drawFunction = drawFunctions[fruit.shape];
+    ctx.fillStyle = fruit.category;
+    drawFunction(fruit);
+
+    if (debug) {
+      ctx.fillStyle = "rgba(255, 0, 0, 0.4)";
+      ctx.fillRect(fruit.x, fruit.y, fruit.width, fruit.height);
+
+      if (fruit.sideWays) {
+        ctx.fillStyle = "white";
+        ctx.font = "bold 14px Arial";
+        const measure = ctx.measureText("S");
+        const tw = measure.width * 0.5;
+        const tx = fruit.x + fruit.width * 0.5 - tw;
+        const ty = fruit.y + fruit.height * 0.5;
+        ctx.fillText("S", tx, ty);
+      }
     }
   });
 }
@@ -400,7 +467,7 @@ document.addEventListener("keyup", keyUpHandler, false);
 
 var intervalId = null;
 // Intervall zwischen den Schüssen
-const shootingInterval = 100;
+const shootingInterval = CONFIG.shooting.intervalMs;
 
 document.addEventListener(
   "touchstart",
@@ -448,11 +515,11 @@ function drawBackground() {
 }
 
 // Ändert die Position der Sterne
-function updateBackground() {
+function updateBackground(dtScale) {
   stars.forEach((star) => {
-    star.y = (star.y + 0.5) % canvas.height;
+    star.y = (star.y + CONFIG.stars.speed * dtScale) % canvas.height;
   });
-  galaxies.forEach((galaxy) => galaxy.update());
+  galaxies.forEach((galaxy) => galaxy.update(dtScale));
 }
 
 function keyDownHandler(event) {
@@ -461,13 +528,15 @@ function keyDownHandler(event) {
   const key = keyMap[event.code];
   if (key) {
     event.preventDefault();
-    window[key] = true;
+    input[key] = true;
   }
-  if (hPressed) {
-    hPressed = false;
+  if (input.hPressed) {
+    input.hPressed = false;
     help.style.display = !showHelp ? "inline-block" : "none";
     showHelp = !showHelp;
     if (!showHelp) {
+      lastTimestamp = 0;
+      accumulator = 0;
       animationInstance = requestAnimationFrame(draw);
     }
     console.log(showHelp);
@@ -478,7 +547,7 @@ function keyUpHandler(event) {
   const key = keyMap[event.code];
   if (key) {
     event.preventDefault();
-    window[key] = false;
+    input[key] = false;
   }
 }
 
@@ -539,20 +608,20 @@ function checkCollision(object1, object2) {
   );
 }
 
-// Zeichnen und Bewegen der radialen Projektile
-function updateAndDrawRadialProjectiles() {
-  for (var i = 0; i < radialProjectiles.length; i++) {
-    radialProjectiles[i].update();
-    radialProjectiles[i].draw();
-    if (
-      radialProjectiles[i].x < 0 ||
-      radialProjectiles[i].x > canvas.width ||
-      radialProjectiles[i].y < 0 ||
-      radialProjectiles[i].y > canvas.height
-    ) {
-      radialProjectiles.splice(i, 1);
-    }
-  }
+function updateRadialProjectiles(dtScale) {
+  radialProjectiles = radialProjectiles.filter((projectile) => {
+    projectile.update(dtScale);
+    return !(
+      projectile.x < 0 ||
+      projectile.x > canvas.width ||
+      projectile.y < 0 ||
+      projectile.y > canvas.height
+    );
+  });
+}
+
+function renderRadialProjectiles() {
+  radialProjectiles.forEach((projectile) => projectile.draw());
 }
 
 // Score anzeigen
@@ -560,30 +629,49 @@ function drawScore() {
   scoreEl.innerHTML = score;
 }
 
-// Spiel-Loop
-function draw(timestamp) {
-  const deltaTime = (timestamp - lastTimestamp) / 1000;
-  lastTimestamp = timestamp;
-
-  if (showHelp) return;
-
-  drawBackground();
-  updateBackground();
-  drawScore();
-
-  createFruit();
-  drawFruits();
-  updateAndDrawAsteroids();
-  updateRocks();
-
-  // Spieler zeichnen
-  ctx.drawImage(playerSprite, playerX, playerY, playerWidth, playerHeight);
-  if (debug) {
-    ctx.fillStyle = "rgba(255, 0, 0, 0.3)";
-    ctx.fillRect(playerX, playerY, playerWidth, playerHeight);
+function updatePlayer(dtScale) {
+  if (input.rightPressed && playerX < canvas.width - playerWidth) {
+    playerX += playerSpeed * dtScale;
+  } else if (input.leftPressed && playerX > 0) {
+    playerX -= playerSpeed * dtScale;
   }
 
-  // Raumschiff-Projektil zeichnen
+  if (input.upPressed && playerY > 0) {
+    playerY -= playerSpeed * dtScale;
+  } else if (input.downPressed && playerY < canvas.height - playerHeight) {
+    playerY += playerSpeed * dtScale;
+  }
+}
+
+function updateProjectiles(dtScale) {
+  projectiles = projectiles.filter((proj) => {
+    proj.y -= proj.speed * dtScale;
+    return proj.y >= 0;
+  });
+}
+
+function updateFruitProjectiles(dtScale) {
+  fruitProjectiles = fruitProjectiles.filter((proj) => {
+    proj.x += proj.speedX * dtScale;
+    proj.y += proj.speedY * dtScale;
+
+    return !(
+      proj.y > canvas.height ||
+      proj.y < 0 ||
+      proj.x < 0 ||
+      proj.x > canvas.width
+    );
+  });
+}
+
+function updateParticles(dtScale) {
+  particles = particles.filter((particle) => {
+    particle.update(dtScale);
+    return particle.size > 0.1;
+  });
+}
+
+function renderProjectiles() {
   for (let { x, y } of projectiles) {
     ctx.beginPath();
     ctx.arc(x, y, 3, 0, TWO_PI);
@@ -593,10 +681,9 @@ function draw(timestamp) {
     ctx.stroke();
     ctx.closePath();
   }
+}
 
-  updateAndDrawRadialProjectiles();
-
-  // Früchte-Projektil zeichnen
+function renderFruitProjectiles() {
   for (let { category, x, y } of fruitProjectiles) {
     ctx.beginPath();
     ctx.fillStyle = "yellow"; //category;
@@ -606,68 +693,57 @@ function draw(timestamp) {
     ctx.stroke();
     ctx.closePath();
   }
+}
 
-  // Spielerbewegung
-  if (rightPressed && playerX < canvas.width - playerWidth) {
-    playerX += playerSpeed;
-  } else if (leftPressed && playerX > 0) {
-    playerX -= playerSpeed;
+function renderPlayer() {
+  ctx.drawImage(playerSprite, playerX, playerY, playerWidth, playerHeight);
+  if (debug) {
+    ctx.fillStyle = "rgba(255, 0, 0, 0.3)";
+    ctx.fillRect(playerX, playerY, playerWidth, playerHeight);
   }
+}
 
-  if (upPressed && playerY > 0) {
-    playerY -= playerSpeed;
-  } else if (downPressed && playerY < canvas.height - playerHeight) {
-    playerY += playerSpeed;
-  }
+function renderParticles() {
+  particles.forEach((particle) => particle.draw());
+}
 
-  // Raumschiff-Projektilbewegung
-  projectiles = projectiles.filter((proj) => {
-    proj.y -= proj.speed;
-    // return true if the projectile is within the canvas
-    return !(proj.y < 0);
-  });
+function updateGame(dt) {
+  const dtScale = dt * 60;
 
-  // Früchte-Projektilbewegung
-  fruitProjectiles = fruitProjectiles.filter((proj, i) => {
-    proj.x += proj.speedX;
-    proj.y += proj.speedY;
+  updateBackground(dtScale);
+  createFruit();
+  updateFruits(dtScale);
+  updateAsteroids(dtScale);
+  updateRocks(dtScale);
+  updatePlayer(dtScale);
+  updateProjectiles(dtScale);
+  updateFruitProjectiles(dtScale);
+  updateRadialProjectiles(dtScale);
 
-    // return true if the projectile is within the canvas
-    return !(
-      proj.y > canvas.height ||
-      proj.y < 0 ||
-      proj.x < 0 ||
-      proj.x > canvas.width
-    );
-  });
-
-  // Raumschiff-Projektil abfeuern
-  if (spacePressed) {
+  if (input.spacePressed) {
     shoot();
-    spacePressed = false;
+    input.spacePressed = false;
   }
-  if (cPressed) {
+  if (input.cPressed) {
     fireRadialProjectile();
-    cPressed = false;
+    input.cPressed = false;
     audio.playShootSound();
   }
-  if (tPressed) {
-    tPressed = false;
+  if (input.tPressed) {
+    input.tPressed = false;
     audio.nextTrack();
   }
-  if (dPressed) {
-    dPressed = false;
+  if (input.dPressed) {
+    input.dPressed = false;
     debug = !debug;
   }
-  if (mPressed) {
-    mPressed = false;
+  if (input.mPressed) {
+    input.mPressed = false;
     audio.toggleAudioPlaying();
   }
 
   checkProjectileHitFruit(projectiles);
-
   checkProjectileHitFruit(radialProjectiles);
-
   checkFruitProjectileHitShip(fruitProjectiles, {
     x: playerX,
     y: playerY,
@@ -675,29 +751,51 @@ function draw(timestamp) {
     height: playerHeight,
   });
 
-  // Zeichnen und Aktualisieren der Partikel
-  for (let i = 0; i < particles.length; i++) {
-    particles[i].draw();
-    particles[i].update();
+  updateParticles(dtScale);
+}
 
-    // Partikel entfernen, wenn die Größe kleiner als 0.2 ist
-    if (particles[i].size <= 0.1) {
-      particles.splice(i, 1);
-      i--; // Die Positionsindeksierung ausichen
-    }
-  }
+function renderGame(deltaTime) {
+  drawBackground();
+  renderFruits();
+  renderAsteroids();
+  renderRocks();
+  renderPlayer();
+  renderProjectiles();
+  renderRadialProjectiles();
+  renderFruitProjectiles();
+  renderParticles();
+  drawScore();
 
-  // Hint for Help ...
   ctx.fillStyle = "white";
   ctx.fillText("H for Help", 5, canvas.height - 5);
 
   if (debug) {
     var t = Math.ceil(1 / deltaTime) + " fps";
-    var m = ctx.measureText(t);
     ctx.fillStyle = "white";
-    ctx.fillText(t, canvas.width - 100, canvas.height-5);
-    console.log(t);
+    ctx.fillText(t, canvas.width - 100, canvas.height - 5);
   }
+}
+
+const FIXED_DT = 1 / 60;
+const MAX_DELTA = 0.1;
+let accumulator = 0;
+
+// Spiel-Loop
+function draw(timestamp) {
+  if (showHelp) return;
+
+  if (!lastTimestamp) lastTimestamp = timestamp;
+  let deltaTime = (timestamp - lastTimestamp) / 1000;
+  if (deltaTime > MAX_DELTA) deltaTime = MAX_DELTA;
+  lastTimestamp = timestamp;
+
+  accumulator += deltaTime;
+  while (accumulator >= FIXED_DT) {
+    updateGame(FIXED_DT);
+    accumulator -= FIXED_DT;
+  }
+
+  renderGame(deltaTime);
 
   animationInstance = requestAnimationFrame(draw);
 }
@@ -732,6 +830,8 @@ function handleVisibilityChange() {
     console.log(`[${str}] Animation paused`);
   } else {
     // Tab ist wieder sichtbar, Animation fortsetzen
+    lastTimestamp = 0;
+    accumulator = 0;
     animationInstance = requestAnimationFrame(draw);
     console.log(`[${str}] Animation resumed`);
   }
@@ -741,7 +841,7 @@ function handleVisibilityChange() {
 for (let i = 0; i < starCount; i++) {
   let x = Math.random() * canvas.width;
   let y = Math.random() * canvas.height;
-  let size = Math.random() * 2;
+  let size = Math.random() * CONFIG.stars.maxSize;
   stars[i] = { x: x, y: y, size: size };
 }
 
@@ -753,9 +853,25 @@ for (let i = 0; i < galaxyCount; i++) {
   let speed = galaxySpeedBase + size / 5;
   let color = galaxyColors[Math.floor(Math.random() * galaxyColors.length)];
 
-  galaxies[i] = new Galaxy(x, y, size, speed, color);
+  galaxies[i] = new Galaxy({
+    x,
+    y,
+    size,
+    speed,
+    color,
+    ctx,
+    canvas,
+    twoPi: TWO_PI,
+    galaxySizes,
+    galaxyColors,
+    galaxySpeedBase,
+    steps: CONFIG.galaxy.steps,
+    depth: CONFIG.galaxy.depth,
+    drift: CONFIG.galaxy.drift,
+    scale: CONFIG.galaxy.scale,
+  });
 }
 
 populateRocks();
 
-draw();
+animationInstance = requestAnimationFrame(draw);

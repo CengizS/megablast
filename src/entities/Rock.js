@@ -1,11 +1,13 @@
-class Rock {
-  constructor(x, y, height, width, miniRockSize = 10) {
+export default class Rock {
+  constructor({ x, y, height, width, miniRockSize = 10, ctx, canvas }) {
     this.initialY = y;
     this.x = x;
     this.y = y;
     this.height = height;
     this.width = width;
     this.miniRockSize = miniRockSize;
+    this.ctx = ctx;
+    this.canvas = canvas;
     this.miniRocks = this.generateMiniRocks();
   }
 
@@ -23,8 +25,8 @@ class Rock {
 
   draw() {
     this.miniRocks.forEach((miniRock) => {
-      ctx.fillStyle = miniRock.color;
-      ctx.fillRect(
+      this.ctx.fillStyle = miniRock.color;
+      this.ctx.fillRect(
         miniRock.x,
         miniRock.y,
         this.miniRockSize,
@@ -33,12 +35,12 @@ class Rock {
     });
   }
 
-  update() {
-    this.y += 1;
+  update(dtScale = 1) {
+    this.y += 1 * dtScale;
     this.miniRocks.forEach((miniRock) => {
-      miniRock.y += 1;
+      miniRock.y += 1 * dtScale;
     });
-    if (this.y > canvas.height) {
+    if (this.y > this.canvas.height) {
       this.y = -this.height;
       this.miniRocks = this.generateMiniRocks();
     }

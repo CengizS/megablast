@@ -1,4 +1,4 @@
-class GameAudio {
+export default class GameAudio {
   constructor({
     backgroundMusicEl,
     explosionEl,
