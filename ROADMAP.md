@@ -16,3 +16,7 @@
 ## P3 - Qualitaet und Wartbarkeit
 - ESLint/Prettier (optional), kleine Utility-Tests.
 - Simple Build-/Serve-Scripts (optional).
+
+## P4 - Gameplay Balancing
+- Difficulty Curve (Spawn-Rates, HP-Verteilung, Pattern-Gewichtung).
+- Boss-Pattern mit klarer Telegraphing-Phase.
