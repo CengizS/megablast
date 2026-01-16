@@ -12,7 +12,6 @@ canvas.style.height = `${window.innerHeight}px`;
 canvas.width = 1080;
 canvas.height = 576;
 let ctx = canvas.getContext("2d");
-let audioPlaying = false;
 let showHelp = false;
 let score = 0;
 let shipLives = 3;
@@ -23,7 +22,6 @@ let SHOOTING_CHANCE = 0.0075;
 let liveEl = document.querySelector("#liveEl");
 let scoreEl = document.querySelector("#scoreEl");
 let radialProjectiles = [];
-let trackPlaying = 0;
 let trackTitle = document.querySelector("#trackTitle");
 let trackDiv = document.querySelector("#titleDiv");
 
@@ -31,20 +29,25 @@ let touchLastX = 0;
 let touchLastY = 0;
 
 const keyMap = {
-  39: "rightPressed",
-  37: "leftPressed",
-  38: "upPressed",
-  40: "downPressed",
-  32: "spacePressed",
-  67: "cPressed",
-  84: "tPressed",
-  68: "dPressed",
-  77: "mPressed",
-  72: "hPressed",
+  ArrowRight: "rightPressed",
+  ArrowLeft: "leftPressed",
+  ArrowUp: "upPressed",
+  ArrowDown: "downPressed",
+  Space: "spacePressed",
+  KeyC: "cPressed",
+  KeyT: "tPressed",
+  KeyD: "dPressed",
+  KeyM: "mPressed",
+  KeyH: "hPressed",
 };
 
 // Instantiate audio
-let audio = new GameAudio();
+let audio = new GameAudio({
+  backgroundMusicEl: document.querySelector("#backgroundMusic"),
+  explosionEl: document.getElementById("explosion"),
+  trackTitleEl: trackTitle,
+  trackDivEl: trackDiv,
+});
 
 let help = document.getElementById("help");
 
@@ -455,8 +458,9 @@ function updateBackground() {
 function keyDownHandler(event) {
   if (debug) console.log(event);
 
-  const key = keyMap[event.keyCode];
+  const key = keyMap[event.code];
   if (key) {
+    event.preventDefault();
     window[key] = true;
   }
   if (hPressed) {
@@ -471,8 +475,9 @@ function keyDownHandler(event) {
 }
 
 function keyUpHandler(event) {
-  const key = keyMap[event.keyCode];
+  const key = keyMap[event.code];
   if (key) {
+    event.preventDefault();
     window[key] = false;
   }
 }
@@ -656,16 +661,7 @@ function draw(timestamp) {
   }
   if (mPressed) {
     mPressed = false;
-
-    if (audio.audioPlaying) {
-      backgroundMusic.pause();
-      backgroundMusic.currentTime = 0;
-    } else {
-      trackPlaying = -1;
-      backgroundMusic.volume = 0.1; // Lautstärke einstellen (0.0 - 1.0)
-      audio.nextTrack();
-    }
-    audio.audioPlaying = !audio.audioPlaying;
+    audio.toggleAudioPlaying();
   }
 
   checkProjectileHitFruit(projectiles);
@@ -740,10 +736,6 @@ function handleVisibilityChange() {
     console.log(`[${str}] Animation resumed`);
   }
 }
-
-backgroundMusic.onended = function () {
-  audio.nextTrack();
-};
 
 // Erstellt Sterne mit zufälligen Positionen und Größe
 for (let i = 0; i < starCount; i++) {

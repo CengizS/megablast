@@ -1,8 +1,16 @@
 class GameAudio {
-  constructor() {
+  constructor({
+    backgroundMusicEl,
+    explosionEl,
+    trackTitleEl,
+    trackDivEl,
+  } = {}) {
     this.audioPlaying = false;
-    this.backgroundMusic = document.querySelector("#backgroundMusic");
+    this.backgroundMusic =
+      backgroundMusicEl || document.querySelector("#backgroundMusic");
     this.trackPlaying = -1;
+    this.trackTitleEl = trackTitleEl || document.querySelector("#trackTitle");
+    this.trackDivEl = trackDivEl || document.querySelector("#titleDiv");
     this.tracks = [
       {
         title: "When the Siren sounds",
@@ -25,7 +33,7 @@ class GameAudio {
         track: "track_5.mp3",
       },
     ];
-    this.explosionSound = document.getElementById("explosion");
+    this.explosionSound = explosionEl || document.getElementById("explosion");
     this.shootSound = new Audio("shoot.wav");
     this.shootSound.volume = 0.2;
     this.backgroundMusic.onended = () => {
@@ -60,18 +68,22 @@ class GameAudio {
     this.trackPlaying++;
     if (this.trackPlaying >= this.tracks.length) this.trackPlaying = 0;
     this.backgroundMusic.src = this.tracks[this.trackPlaying].track;
-    trackTitle.innerHTML = this.tracks[this.trackPlaying].title;
+    if (this.trackTitleEl) {
+      this.trackTitleEl.innerHTML = this.tracks[this.trackPlaying].title;
+    }
     this.backgroundMusic.play();
-    gsap.fromTo(
-      trackDiv,
-      {
-        opacity: 1,
-      },
-      {
-        duration: 8,
-        opacity: 0,
-        delay: 3,
-      }
-    );
+    if (this.trackDivEl) {
+      gsap.fromTo(
+        this.trackDivEl,
+        {
+          opacity: 1,
+        },
+        {
+          duration: 8,
+          opacity: 0,
+          delay: 3,
+        }
+      );
+    }
   }
 }

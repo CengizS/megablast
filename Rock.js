@@ -49,7 +49,7 @@ class Rock {
       (miniRock) =>
         miniRock.x < ship.x + ship.width &&
         miniRock.x + this.miniRockSize > ship.x &&
-        Rock.y < ship.y + ship.height &&
+        miniRock.y < ship.y + ship.height &&
         miniRock.y + this.miniRockSize > ship.y
     );
   }
