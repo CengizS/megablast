@@ -1,0 +1,12 @@
+{
+  "name": "megablast",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  }
+}

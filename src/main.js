@@ -52,11 +52,9 @@ window.addEventListener("resize", resizeCanvas);
 let showHelp = false;
 let score = 0;
 let shipLives = 3;
-let currentLife = 0;
 let shipHitCount = 0;
 let SHOOTING_CHANCE = CONFIG.shootingChance;
 
-let liveEl = document.querySelector("#liveEl");
 let scoreEl = document.querySelector("#scoreEl");
 let radialProjectiles = [];
 let trackTitle = document.querySelector("#trackTitle");
@@ -93,7 +91,6 @@ let enemyPalettes = CONFIG.enemy.palettes;
 let enemySpawnAccumulator = 0;
 let enemyWidth = CONFIG.enemy.width;
 let enemyHeight = CONFIG.enemy.height;
-let enemySpeed = CONFIG.enemy.speed;
 let enemies = [];
 let enemyProjectiles = [];
 
@@ -123,8 +120,6 @@ let playerSpeed = CONFIG.player.speed;
 // Projektilvariablen
 let particles = [];
 let shockwaves = [];
-let projectileWidth = 10;
-let projectileHeight = 10;
 let projectileSpeed = CONFIG.projectile.speed;
 let projectiles = [];
 
@@ -562,7 +557,7 @@ document.addEventListener(
 );
 document.addEventListener(
   "touchend",
-  function (e) {
+  function (_e) {
     clearInterval(intervalId);
     intervalId = null;
   },
