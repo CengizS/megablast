@@ -53,16 +53,42 @@ export const CONFIG = {
     maxOffset: 0,
     miniSize: 5,
   },
-  fruit: {
-    categories: ["red", "green", "cyan", "orange", "purple"],
-    width: 30,
-    height: 30,
-    speed: 3,
-    spawnIntervalMs: 500,
-    sidewaysChance: 0.2,
+  enemy: {
+    width: 34,
+    height: 28,
+    speed: 2.4,
+    spawnIntervalMs: 550,
+    hitpoints: {
+      min: 1,
+      max: 3,
+    },
+    palettes: [
+      { primary: "#67d4ff", secondary: "#0f2b3a" },
+      { primary: "#ffb347", secondary: "#3a220f" },
+      { primary: "#7cff8a", secondary: "#0f3a1a" },
+      { primary: "#f26b6b", secondary: "#3a0f0f" },
+    ],
+    patterns: {
+      formationSize: 4,
+      formationSpacing: 42,
+      sideSpeed: 2.2,
+      topSpeed: 2.6,
+      radial: {
+        count: 8,
+        radius: 200,
+        speed: 1.8,
+      },
+    },
   },
   particles: {
-    count: 50,
+    count: 70,
+    coreRatio: 0.35,
+    shrinkRate: 0.08,
+    sizeRange: [1, 8],
+    speedRange: {
+      x: [-2, 2],
+      y: [-2, 2],
+    },
   },
   shooting: {
     intervalMs: 100,
