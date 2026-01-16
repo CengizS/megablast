@@ -1,5 +1,5 @@
 export default class Rock {
-  constructor({ x, y, height, width, miniRockSize = 10, ctx, canvas }) {
+  constructor({ x, y, height, width, miniRockSize = 10, ctx, bounds }) {
     this.initialY = y;
     this.x = x;
     this.y = y;
@@ -7,7 +7,7 @@ export default class Rock {
     this.width = width;
     this.miniRockSize = miniRockSize;
     this.ctx = ctx;
-    this.canvas = canvas;
+    this.bounds = bounds;
     this.miniRocks = this.generateMiniRocks();
   }
 
@@ -40,7 +40,7 @@ export default class Rock {
     this.miniRocks.forEach((miniRock) => {
       miniRock.y += 1 * dtScale;
     });
-    if (this.y > this.canvas.height) {
+    if (this.y > this.bounds.height) {
       this.y = -this.height;
       this.miniRocks = this.generateMiniRocks();
     }

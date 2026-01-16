@@ -1,5 +1,5 @@
 export default class Asteroid {
-  constructor({ x, y, radius, speed, rotation, sprite, ctx, canvas, twoPi }) {
+  constructor({ x, y, radius, speed, rotation, sprite, ctx, bounds, twoPi }) {
     this.x = x;
     this.y = y;
     this.radius = radius;
@@ -7,7 +7,7 @@ export default class Asteroid {
     this.rotation = rotation;
     this.sprite = sprite;
     this.ctx = ctx;
-    this.canvas = canvas;
+    this.bounds = bounds;
     this.twoPi = twoPi;
     this.direction = Math.random() * 2 - 1;
   }
@@ -29,11 +29,11 @@ export default class Asteroid {
   }
 
   wrap() {
-    if (this.x < -this.radius) this.x = this.canvas.width + this.radius;
-    else if (this.x > this.canvas.width + this.radius) this.x = -this.radius;
+    if (this.x < -this.radius) this.x = this.bounds.width + this.radius;
+    else if (this.x > this.bounds.width + this.radius) this.x = -this.radius;
 
-    if (this.y < -this.radius) this.y = this.canvas.height + this.radius;
-    else if (this.y > this.canvas.height + this.radius) this.y = -this.radius;
+    if (this.y < -this.radius) this.y = this.bounds.height + this.radius;
+    else if (this.y > this.bounds.height + this.radius) this.y = -this.radius;
   }
 
   draw() {

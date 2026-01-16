@@ -8,7 +8,7 @@ export default class Galaxy {
     speed,
     color,
     ctx,
-    canvas,
+    bounds,
     twoPi,
     galaxySizes,
     galaxyColors,
@@ -26,7 +26,7 @@ export default class Galaxy {
     this.rotation = Math.random() * twoPi;
     this.color = color; // colors for distance representation
     this.ctx = ctx;
-    this.canvas = canvas;
+    this.bounds = bounds;
     this.galaxySizes = galaxySizes;
     this.galaxyColors = galaxyColors;
     this.galaxySpeedBase = galaxySpeedBase;
@@ -95,8 +95,8 @@ export default class Galaxy {
       Math.sin(this.phase) * this.drift.amplitude * this.depth +
       this.drift.speed * dtScale * 0.1 * (this.depth - 0.5);
 
-    if (this.y > this.canvas.height) {
-      this.baseX = Math.random() * this.canvas.width;
+    if (this.y > this.bounds.height) {
+      this.baseX = Math.random() * this.bounds.width;
       this.x = this.baseX;
       this.y = 0;
 
