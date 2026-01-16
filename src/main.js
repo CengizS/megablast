@@ -2,7 +2,7 @@ import GameAudio from "./audio/GameAudio.js";
 import Asteroid from "./entities/Asteroid.js";
 import Galaxy from "./entities/Galaxy.js";
 import Particle from "./entities/Particle.js";
-import Rock from "./entities/Rock.js";
+import Canyon from "./entities/Canyon.js";
 import RadialProjectile from "./entities/RadialProjectile.js";
 import { CONFIG } from "./config.js";
 import { fastCos, fastSin, randBetween } from "./utils/math.js";
@@ -19,6 +19,7 @@ const view = {
   dpr: 1,
   scale: 1,
 };
+let canyon;
 
 function resizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
@@ -42,6 +43,10 @@ function resizeCanvas() {
   ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
   view.dpr = dpr;
   view.scale = scale;
+
+  if (canyon) {
+    canyon.bounds = view;
+  }
 }
 
 canvas.width = view.width;
@@ -141,9 +146,11 @@ let asteroidSpeed = CONFIG.asteroid.speed;
 let asteroidSprite = new Image();
 asteroidSprite.src = "asteroid.png";
 
-// Felsenformation
-let leftRocks = [];
-let rightRocks = [];
+  canyon = new Canyon({
+    ctx,
+    bounds: view,
+    config: CONFIG.canyon,
+  });
 
 // Funktion zum Erzeugen von Asteroiden
 function createAsteroid() {
@@ -220,59 +227,12 @@ function drawEnemy(enemy) {
   }
 }
 
-// Felsenformation rechts und links des Spielfelds definieren
-let rockHeight = CONFIG.rocks.height;
-let variance = CONFIG.rocks.variance;
-let maxOffset = CONFIG.rocks.maxOffset;
-function populateRocks() {
-  let offset = 0; // aktuelle Höhenänderung für die Felsen
-
-  for (let i = 0; i < view.height * 2; i += rockHeight + offset) {
-    let randLeft = Math.random() * variance + 10;
-    let randRight = Math.random() * variance + 10;
-    offset = Math.random() * maxOffset; // aktualisiere die Höhenänderung für die nächsten Felsen
-
-    leftRocks.push(
-      new Rock({
-        x: 0,
-        y: i,
-        height: rockHeight,
-        width: randLeft,
-        miniRockSize: CONFIG.rocks.miniSize,
-        ctx,
-        bounds: view,
-      })
-    );
-    rightRocks.push(
-      new Rock({
-        x: view.width - randRight,
-        y: i,
-        height: rockHeight,
-        width: randRight,
-        miniRockSize: CONFIG.rocks.miniSize,
-        ctx,
-        bounds: view,
-      })
-    );
-  }
+function updateCanyon(dtScale) {
+  canyon.update(dtScale);
 }
 
-function updateRocks(dtScale) {
-  leftRocks.forEach((rock) => {
-    rock.update(dtScale);
-  });
-  rightRocks.forEach((rock) => {
-    rock.update(dtScale);
-  });
-}
-
-function renderRocks() {
-  leftRocks.forEach((rock) => {
-    rock.draw();
-  });
-  rightRocks.forEach((rock) => {
-    rock.draw();
-  });
+function renderCanyon() {
+  canyon.draw();
 }
 
 // Radiales Projektil abfeuern
@@ -797,7 +757,7 @@ function updateGame(dt) {
   createEnemies();
   updateEnemies(dtScale);
   updateAsteroids(dtScale);
-  updateRocks(dtScale);
+  updateCanyon(dtScale);
   updatePlayer(dtScale);
   updateProjectiles(dtScale);
   updateEnemyProjectiles(dtScale);
@@ -841,7 +801,7 @@ function renderGame(deltaTime) {
   drawBackground();
   renderEnemies();
   renderAsteroids();
-  renderRocks();
+  renderCanyon();
   renderPlayer();
   renderProjectiles();
   renderRadialProjectiles();
@@ -954,7 +914,5 @@ for (let i = 0; i < galaxyCount; i++) {
     scale: CONFIG.galaxy.scale,
   });
 }
-
-populateRocks();
 
 animationInstance = requestAnimationFrame(draw);

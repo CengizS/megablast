@@ -53,6 +53,21 @@ export const CONFIG = {
     maxOffset: 0,
     miniSize: 5,
   },
+  canyon: {
+    segmentHeight: 40,
+    speed: 0.9,
+    wall: {
+      min: 30,
+      max: 130,
+      step: 10,
+      phaseStep: 0.18,
+      phaseJitter: 0.08,
+      color: "#1c1f21",
+      edgeColor: "#2c3236",
+      speckles: ["#2d3438", "#14191b", "#3b4348"],
+      speckleAlpha: 0.35,
+    },
+  },
   enemy: {
     width: 34,
     height: 28,
